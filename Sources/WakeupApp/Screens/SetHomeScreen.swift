@@ -10,13 +10,17 @@ struct SetHomeScreen: View {
     @FocusState private var focused: Bool
 
     private let suggestions: [(addr: String, sub: String)] = [
-        ("512 Larkin St, San Francisco", "Apartment · San Francisco, CA"),
-        ("510 Larkin St", "San Francisco, CA"),
-        ("512 Larkin Place", "Oakland, CA"),
+        ("東京都渋谷区渋谷2丁目21番1号", "マンション · 渋谷区, 東京"),
+        ("東京都渋谷区渋谷2丁目", "渋谷区, 東京"),
+        ("東京都新宿区新宿3丁目", "新宿区, 東京"),
     ]
 
     private var showSuggestions: Bool {
         focused && !query.isEmpty && !confirmed
+    }
+
+    private var applyEnabled: Bool {
+        !query.isEmpty && query != vm.homeAddress
     }
 
     var body: some View {
@@ -46,12 +50,20 @@ struct SetHomeScreen: View {
                         TextField("Search address", text: $query)
                             .font(Theme.ui(16)).foregroundColor(Theme.ink)
                             .focused($focused)
+                            .submitLabel(.search)
+                            .onSubmit { applyTypedAddress() }
                             .onChange(of: query) { _ in confirmed = false }
-                        if confirmed {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundColor(Theme.coralDeep)
+                        Button(action: applyTypedAddress) {
+                            Image(systemName: confirmed
+                                  ? "checkmark.circle.fill"
+                                  : "arrow.right.circle.fill")
+                                .font(.system(size: 22, weight: .semibold))
+                                .foregroundColor(applyEnabled
+                                                 ? Theme.coralDeep : Theme.ink3)
+                                .frame(width: 28, height: 28)
                         }
+                        .buttonStyle(.plain)
+                        .disabled(!applyEnabled)
                     }
                     .padding(.horizontal, 14).padding(.vertical, 12)
                     .background(Color.white)
@@ -100,7 +112,7 @@ struct SetHomeScreen: View {
                 Spacer(minLength: 0)
 
                 VStack(spacing: 18) {
-                    WakeupMapView(size: 320, showUser: false, variant: .light)
+                    HomeMapView(coordinate: vm.homeCoordinate, size: 320)
                         .overlay(Circle().strokeBorder(Theme.hairline, lineWidth: 1))
                         .shadow(color: Color(hex: 0x2B1810, alpha: 0.12), radius: 40, y: 12)
                     HStack(spacing: 8) {
@@ -118,7 +130,12 @@ struct SetHomeScreen: View {
                 Spacer(minLength: 0)
 
                 BigButton(title: "Confirm home address", variant: .primary,
-                          disabled: !confirmed, action: onContinue)
+                          disabled: query.isEmpty) {
+                    vm.homeAddress = query
+                    confirmed = true
+                    focused = false
+                    onContinue()
+                }
                     .padding(.horizontal, 24)
                     .padding(.top, 24).padding(.bottom, 40)
             }
@@ -128,7 +145,13 @@ struct SetHomeScreen: View {
 
     private func select(_ addr: String) {
         query = addr
-        vm.homeAddress = addr
+        confirmed = false
+        focused = false
+    }
+
+    private func applyTypedAddress() {
+        guard !query.isEmpty else { return }
+        vm.homeAddress = query
         confirmed = true
         focused = false
     }

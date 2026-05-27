@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import CoreLocation
 import WakeupCore
 
 enum Screen: String, CaseIterable, Identifiable {
@@ -28,20 +29,71 @@ final class WakeupViewModel: ObservableObject {
     @Published var screen: Screen = .idle
     @Published var alarmState: AlarmState = .idle
 
-    @Published var homeAddress: String = "512 Larkin St, San Francisco"
-    @Published var wakeHour: Int = 6
-    @Published var wakeMinute: Int = 30
+    @Published var homeAddress: String {
+        didSet {
+            defaults.set(homeAddress, forKey: Keys.homeAddress)
+            if homeAddress != oldValue { geocodeHome() }
+        }
+    }
+    @Published var wakeHour: Int {
+        didSet { defaults.set(wakeHour, forKey: Keys.wakeHour) }
+    }
+    @Published var wakeMinute: Int {
+        didSet { defaults.set(wakeMinute, forKey: Keys.wakeMinute) }
+    }
+
+    @Published private(set) var homeCoordinate: Coordinate {
+        didSet {
+            defaults.set(homeCoordinate.latitude, forKey: Keys.homeLat)
+            defaults.set(homeCoordinate.longitude, forKey: Keys.homeLng)
+        }
+    }
 
     /// Meters from home while ringing (prototype substitute for live GPS).
     @Published var distance: Double = 0
+
+    private let defaults: UserDefaults
+    private let geocoder = CLGeocoder()
+    private var geocodeTask: Task<Void, Never>?
+
+    private enum Keys {
+        static let homeAddress = "wakeup.homeAddress"
+        static let wakeHour = "wakeup.wakeHour"
+        static let wakeMinute = "wakeup.wakeMinute"
+        static let homeLat = "wakeup.homeLat"
+        static let homeLng = "wakeup.homeLng"
+    }
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        self.homeAddress = defaults.string(forKey: Keys.homeAddress)
+            ?? "東京都渋谷区渋谷2丁目"
+        self.wakeHour = (defaults.object(forKey: Keys.wakeHour) as? Int) ?? 6
+        self.wakeMinute = (defaults.object(forKey: Keys.wakeMinute) as? Int) ?? 30
+        let lat = (defaults.object(forKey: Keys.homeLat) as? Double) ?? 35.6580
+        let lng = (defaults.object(forKey: Keys.homeLng) as? Double) ?? 139.7016
+        self.homeCoordinate = Coordinate(latitude: lat, longitude: lng)
+    }
+
+    private func geocodeHome() {
+        let address = homeAddress
+        geocodeTask?.cancel()
+        geocodeTask = Task { [weak self] in
+            guard !address.isEmpty else { return }
+            let placemarks = try? await CLGeocoder().geocodeAddressString(address)
+            guard !Task.isCancelled, let loc = placemarks?.first?.location else { return }
+            await MainActor.run {
+                self?.homeCoordinate = Coordinate(
+                    latitude: loc.coordinate.latitude,
+                    longitude: loc.coordinate.longitude)
+            }
+        }
+    }
 
     let geofenceMeters = WakeupConfig.geofenceRadiusMeters
     private let useCase = EvaluateAlarmUseCase(
         homeRadiusMeters: WakeupConfig.geofenceRadiusMeters)
     private let calendar = Calendar.current
-
-    // Fixed home coordinate matching the address shown in the prototype.
-    private let homeCoordinate = Coordinate(latitude: 37.7821, longitude: -122.4185)
 
     private var schedule: AlarmSchedule {
         AlarmSchedule(hour: wakeHour, minute: wakeMinute)

@@ -1,0 +1,14 @@
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# Xcode (added in the app-shell phase)
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+*.xcuserstate
+build/
+
+# macOS
+.DS_Store

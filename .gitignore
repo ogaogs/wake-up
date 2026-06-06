@@ -12,3 +12,6 @@ build/
 
 # macOS
 .DS_Store
+
+# ai-driven-feature-flow local failure log (never committed)
+.claude/.feature-loop-log.md

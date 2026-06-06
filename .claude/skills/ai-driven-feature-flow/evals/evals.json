@@ -1,0 +1,53 @@
+{
+  "skill_name": "ai-driven-feature-flow",
+  "evals": [
+    {
+      "id": 1,
+      "name": "vague-gradual-wakeup",
+      "prompt": "I'm building a wake-up / alarm app for iOS. I want to add a feature where the alarm helps users wake up gradually. Can you help me design and implement it?",
+      "expected_output": "Surfaces ambiguity ('gradually' = light? sound? duration?) before writing code. Walks through Phase 1 (Requirements) with testable acceptance criteria. Produces a basic-design document. Does not jump straight into implementation.",
+      "files": [],
+      "assertions": [
+        {"text": "Produces a basic-design document file (e.g. basic-design.md) under outputs/"},
+        {"text": "Surfaces ambiguity about 'gradually' explicitly (mentions at least two of: sound volume, light, vibration, duration) in the transcript or design doc"},
+        {"text": "Acceptance criteria are stated in measurable / testable form (specific numbers, durations, or observable conditions — not just adjectives like 'fast' or 'pleasant')"},
+        {"text": "Does not write the implementation code before requirements and basic-design are written down (design-first ordering)"},
+        {"text": "Treats this as a LOCAL feature: documents a Swift interface contract (public types / use-case protocols, e.g. from interface-contract.md) and does NOT invent a REST/OpenAPI contract for it"},
+        {"text": "The transcript names which phase / gate the run is at and which would block on human input in a real session"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "specific-snooze-feature",
+      "prompt": "Add a snooze feature to my alarm screen. The behavior: when the alarm fires, show a 'Snooze' button. Tapping it silences the alarm for 5 minutes, then the alarm fires again. Maximum 3 snoozes per alarm. After the 3rd snooze, the button is hidden so only 'Dismiss' is available. Please drive this through to a working implementation.",
+      "expected_output": "Derives testable acceptance criteria, produces basic-design and detail-design documents, drives TDD cycles (tests → impl → refactor), sets up parallel verification design.",
+      "files": [],
+      "assertions": [
+        {"text": "Produces a basic-design document file under outputs/ that includes a Scope and a Data model section"},
+        {"text": "Produces a detail-design document file under outputs/"},
+        {"text": "The data model captures the snooze count and the rule 'max 3' (numeric limit and reset semantics described)"},
+        {"text": "Includes at least one unit test file or test sketch covering snooze behavior"},
+        {"text": "Implementation follows a TDD ordering: tests are present and the transcript describes test → implement → refactor rather than implement-first"},
+        {"text": "Treats this as a LOCAL feature: the interface contract is the public Swift surface (types / use-case protocol), not an OpenAPI/REST document"},
+        {"text": "Transcript names at least one phase gate check (Phase 2 → 3, or Phase 3a → 4) and what evidence satisfied it"},
+        {"text": "Verification design (UI / E2E checks) is mentioned as a parallel track to implementation, mapped to acceptance criteria"}
+      ]
+    },
+    {
+      "id": 3,
+      "name": "premature-implementation-pushback",
+      "prompt": "I want to ship a 'send wake-up greeting' feature today — when the alarm goes off and the user dismisses it, automatically post 'Good morning!' to their connected Slack workspace. Just code it up real quick, we can document later.",
+      "expected_output": "Pushes back on 'just code it up' and 'document later'. Surfaces Slack auth, dismiss semantics, error handling. Drives Phase 1 before writing implementation.",
+      "files": [],
+      "assertions": [
+        {"text": "Transcript explicitly pushes back on 'just code it up real quick' / 'document later', naming the cost of skipping design"},
+        {"text": "Identifies Slack OAuth / authentication / credential storage as a missing requirement"},
+        {"text": "Identifies at least two additional ambiguities (e.g. which channel, dismiss semantics, error handling if Slack API fails, what counts as 'connected workspace', offline behavior)"},
+        {"text": "Drives Phase 1 (Requirements) — writing acceptance criteria — before writing implementation code"},
+        {"text": "Produces a basic-design document file under outputs/ (even if partial) rather than only source code"},
+        {"text": "Recognizes this is a NETWORK-boundary feature (Slack HTTP API) and treats the Slack call's contract accordingly (OpenAPI is appropriate here, unlike the local features)"},
+        {"text": "Acceptance criteria are stated in measurable / testable form"}
+      ]
+    }
+  ]
+}
